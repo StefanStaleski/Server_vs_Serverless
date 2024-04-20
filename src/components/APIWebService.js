@@ -36,6 +36,14 @@ const APIWebService = ({ uploadedFile }) => {
         }
     };
 
+    const downloadSortedFile = () => {
+        const sortedFile = new Blob([result.sortedFile], { type: 'text/plain' });
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(sortedFile);
+        downloadLink.download = 'sorted-file.txt';
+        downloadLink.click();
+    };
+
     const renderTable = () => {
         if (!result) return null;
 
@@ -53,11 +61,20 @@ const APIWebService = ({ uploadedFile }) => {
         }
 
         return (
-            <table style={{ borderCollapse: 'collapse', border: '1px solid black' }}>
-                <tbody>
-                    {rows}
-                </tbody>
-            </table>
+            <div>
+                <Button
+                    variant='contained'
+                    onClick={downloadSortedFile}
+                    style={{ marginTop: '20px', marginBottom: '20px' }}
+                >
+                    Download Sorted File
+                </Button>
+                <table style={{ borderCollapse: 'collapse', border: '1px solid black' }}>
+                    <tbody>
+                        {rows}
+                    </tbody>
+                </table>
+            </div>
         );
     };
 

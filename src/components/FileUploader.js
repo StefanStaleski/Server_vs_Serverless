@@ -52,11 +52,6 @@ const FileUploader = () => {
                     ref={fileInputRef}
                     onChange={handleFileChange}
                 />
-                {uploadedFile && (
-                    <Button variant='contained' onClick={handleDownloadClick}>
-                        Download Uploaded File
-                    </Button>
-                )}
             </Box>
             <Box style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }} >
                 {uploadedFile && (
