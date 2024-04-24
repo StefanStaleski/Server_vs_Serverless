@@ -42,7 +42,7 @@ const FileUploader = () => {
 
     return (
         <>
-            <Box style={{ display: 'flex', justifyContent: 'center' }} >
+            <Box style={{ display: 'flex', justifyContent: 'left' }} >
                 <Button variant='contained' onClick={handleUploadClick} style={{ marginRight: '20px' }}>
                     Upload File
                 </Button>
