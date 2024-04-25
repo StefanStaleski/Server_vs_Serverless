@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { Button } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
+import AWS from 'aws-sdk';
+
+AWS.config.update({
+    region: 'eu-north-1',
+    accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY,
+    secretAccessKey: process.env.REACT_APP_AWS_SECRET_KEY
+});
+
+const lambda = new AWS.Lambda();
 
 const APIWebService = ({ uploadedFile }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -30,9 +39,25 @@ const APIWebService = ({ uploadedFile }) => {
             const result = await response.json();
             result.totalTime = performance.now() - startTime;
 
-            result.sortedFileData = response.sortedFile;
+            // Convert uploaded file to base64
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const fileContent = reader.result.split(',')[1]; // Extract base64 content
 
-            setResults([...results, result]);
+                const lambdaResponse = await lambda.invoke({
+                    FunctionName: 'SortInput', // Replace with your Lambda function name
+                    InvocationType: 'RequestResponse',
+                    Payload: JSON.stringify({ file: fileContent, /* other payload data if any */ })
+                }).promise();
+
+                // Parse the Lambda function response
+                const lambdaResult = JSON.parse(lambdaResponse.Payload);
+                console.log(lambdaResult.body);
+
+                // Update results state with the processed data
+                setResults([...results, result]);
+            };
+            reader.readAsDataURL(uploadedFile);
         } catch (error) {
             console.error('Error handling API call: ', error);
         } finally {
