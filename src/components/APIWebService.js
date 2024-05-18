@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import AWS from 'aws-sdk';
@@ -14,7 +14,12 @@ const lambda = new AWS.Lambda();
 const APIWebService = ({ uploadedFile }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [results, setResults] = useState([]);
+    const [lambdaResults, setLambdaResults] = useState([]);
     const [numRequests, setNumRequests] = useState(1);
+
+    useEffect(() => {
+        setIsLoading(false);
+    }, [lambdaResults])
 
     const handleAPICall = async () => {
         setIsLoading(true);
@@ -45,23 +50,29 @@ const APIWebService = ({ uploadedFile }) => {
                 const fileContent = reader.result.split(',')[1]; // Extract base64 content
 
                 const lambdaResponse = await lambda.invoke({
-                    FunctionName: 'SortInput', // Replace with your Lambda function name
+                    FunctionName: 'SortInput',
                     InvocationType: 'RequestResponse',
-                    Payload: JSON.stringify({ file: fileContent, /* other payload data if any */ })
+                    Payload: JSON.stringify({ file: fileContent, numRequests: randomNumRequests })
                 }).promise();
 
                 // Parse the Lambda function response
                 const lambdaResult = JSON.parse(lambdaResponse.Payload);
+
+                console.log(lambdaResult);
                 console.log(lambdaResult.body);
 
                 // Update results state with the processed data
                 setResults([...results, result]);
+                setLambdaResults([...lambdaResults, {
+                    numRequests: randomNumRequests,
+                    processingTime: parseFloat(lambdaResult.body.processingTime)
+                }]);
             };
             reader.readAsDataURL(uploadedFile);
         } catch (error) {
             console.error('Error handling API call: ', error);
         } finally {
-            setIsLoading(false);
+            // setIsLoading(false);
         }
     };
 
@@ -84,58 +95,82 @@ const APIWebService = ({ uploadedFile }) => {
 
         return (
             <div>
-                <Button
-                    variant='contained'
-                    onClick={downloadSortedFile}
-                    style={{ marginTop: '20px', marginBottom: '20px' }}
-                >
-                    Download Sorted File
-                </Button>
-                <table style={{ borderCollapse: 'collapse', border: '1px solid black' }}>
-                    <thead>
-                        <tr style={{ border: '1px solid black' }}>
-                            <th style={{ border: '1px solid black', padding: '8px' }}>Number of Requests</th>
-                            <th style={{ border: '1px solid black', padding: '8px' }}>Processing Time (ms)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {results.map((result, index) => (
-                            <tr key={index} style={{ border: '1px solid black' }}>
-                                <td style={{ border: '1px solid black', padding: '8px' }}>{result.numRequests}</td>
-                                <td style={{ border: '1px solid black', padding: '8px' }}>{result.totalTime.toFixed(2)}</td>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Button
+                        variant='contained'
+                        onClick={downloadSortedFile}
+                        style={{ marginTop: '20px', marginBottom: '20px' }}
+                    >
+                        Download Sorted File
+                    </Button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                    <table style={{ borderCollapse: 'collapse', border: '1px solid black' }}>
+                        <thead>
+                            <tr style={{ border: '1px solid black' }}>
+                                <th style={{ border: '1px solid black', padding: '8px' }}>Number of Requests</th>
+                                <th style={{ border: '1px solid black', padding: '8px' }}>Server Processing Time (ms)</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {results.map((result, index) => (
+                                <tr key={index} style={{ border: '1px solid black' }}>
+                                    <td style={{ border: '1px solid black', padding: '8px' }}>{result.numRequests}</td>
+                                    <td style={{ border: '1px solid black', padding: '8px' }}>{result.totalTime.toFixed(2)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <table style={{ borderCollapse: 'collapse', border: '1px solid black', marginLeft: '20px' }}>
+                        <thead>
+                            <tr style={{ border: '1px solid black' }}>
+                                <th style={{ border: '1px solid black', padding: '8px' }}>Number of Requests</th>
+                                <th style={{ border: '1px solid black', padding: '8px' }}>Serverless Processing Time (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {lambdaResults.map((result, index) => (
+                                <tr key={index} style={{ border: '1px solid black' }}>
+                                    <td style={{ border: '1px solid black', padding: '8px' }}>{result.numRequests}</td>
+                                    <td style={{ border: '1px solid black', padding: '8px' }}>{result.processingTime.toFixed(2)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         );
     };
 
 
     return (
-        <div style={{ alignItems: 'left', marginTop: '10px' }}>
-            <div style={{ marginRight: '1170px' }}>
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginRight: '15px' }}>
                 <label htmlFor="thresholdInput">Threshold Value:</label>
                 <input
                     id='thresholdInput'
                     type="number"
                     value={numRequests}
                     onChange={(e) => setNumRequests(e.target.value)}
-                    style={{ marginBottom: '20px', alignContent: 'left', marginLeft: '5px' }}
+                    style={{ marginLeft: '5px' }}
                 />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginRight: '27px' }}>
                 <Button
                     variant='contained'
                     onClick={handleAPICall}
                     disabled={isLoading || !uploadedFile}
+                    style={{
+                        marginTop: '20px',
+                        marginLeft: '30px'
+                    }}
                 >
                     Start Calculation via API
                 </Button>
             </div>
-            <div>
-
-            </div>
             {isLoading ? (
-                <CircularProgress style={{ marginTop: '20px' }} />
+                <CircularProgress style={{ marginTop: '20px', marginLeft: '125px' }} />
             ) : (
                 renderTable()
             )}
