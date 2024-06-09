@@ -18,7 +18,7 @@ const APIWebService = ({ uploadedFile }) => {
             const randomNumRequests = Math.floor((Math.random() * numRequests) + 1);
             formData.append('numRequests', randomNumRequests);
 
-            const response = await fetch(`${env.REACT_APP_API_URL}/calculateAPI`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/calculateAPI`, {
                 method: 'POST',
                 body: formData
             });
